@@ -1,0 +1,61 @@
+server:
+  port: 8080
+  shutdown: graceful
+
+spring:
+  application:
+    name: billing-api
+  datasource:
+    # H2 en memoria con dialecto PostgreSQL: cero configuración para probar la API.
+    url: jdbc:h2:mem:billing;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE
+    username: sa
+    password: ""
+    driver-class-name: org.h2.Driver
+  jpa:
+    open-in-view: false
+    hibernate:
+      # El esquema lo manda Flyway; Hibernate solo comprueba que encaja.
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when_authorized
+      probes:
+        enabled: true
+  metrics:
+    tags:
+      application: billing-api
+
+springdoc:
+  swagger-ui:
+    path: /docs
+    operations-sorter: method
+  api-docs:
+    path: /v3/api-docs
+
+app:
+  jwt:
+    # En producción, define JWT_SECRET (mínimo 32 bytes) como variable de entorno.
+    secret: ${JWT_SECRET:cambia-esta-clave-en-produccion-32-bytes-minimo}
+    issuer: billing-api
+    ttl-minutes: 60
+
+logging:
+  level:
+    dev.hazsy.billing: INFO

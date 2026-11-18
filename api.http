@@ -1,0 +1,84 @@
+### Flujo completo de facturación
+### VS Code: extensión REST Client · IntelliJ: HTTP Client
+
+@host = http://localhost:8080
+
+### 1. Token
+# @name login
+POST {{host}}/api/auth/token
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "admin12345"
+}
+
+###
+@token = {{login.response.body.accessToken}}
+
+### 2. Cliente
+# @name customer
+POST {{host}}/api/customers
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Acme SL",
+  "email": "facturas@acme.es",
+  "taxId": "B12345678"
+}
+
+### 3. Factura en borrador
+# @name invoice
+POST {{host}}/api/invoices
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "customerId": "{{customer.response.body.id}}",
+  "currency": "EUR",
+  "lines": [
+    { "description": "Consultoría", "quantity": 2, "unitPrice": 50.00, "vatRate": 0.21 },
+    { "description": "Licencia anual", "quantity": 1, "unitPrice": 30.00, "vatRate": 0.10 }
+  ]
+}
+
+### 4. Emitir
+POST {{host}}/api/invoices/{{invoice.response.body.id}}/issue
+Authorization: Bearer {{token}}
+
+### 5. Pago parcial (idempotente)
+POST {{host}}/api/invoices/{{invoice.response.body.id}}/payments
+Authorization: Bearer {{token}}
+Idempotency-Key: pago-001
+Content-Type: application/json
+
+{ "amount": 100.00 }
+
+### 6. Repetir la misma petición: devuelve el pago original
+POST {{host}}/api/invoices/{{invoice.response.body.id}}/payments
+Authorization: Bearer {{token}}
+Idempotency-Key: pago-001
+Content-Type: application/json
+
+{ "amount": 100.00 }
+
+### 7. Liquidar
+POST {{host}}/api/invoices/{{invoice.response.body.id}}/payments
+Authorization: Bearer {{token}}
+Idempotency-Key: pago-002
+Content-Type: application/json
+
+{ "amount": 54.00 }
+
+### 8. Detalle
+GET {{host}}/api/invoices/{{invoice.response.body.id}}
+Authorization: Bearer {{token}}
+
+### 9. Sobrepago (400)
+POST {{host}}/api/invoices/{{invoice.response.body.id}}/payments
+Authorization: Bearer {{token}}
+Idempotency-Key: pago-003
+Content-Type: application/json
+
+{ "amount": 999.00 }

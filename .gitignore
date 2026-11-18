@@ -1,0 +1,17 @@
+# Build
+target/
+!.mvn/wrapper/maven-wrapper.jar
+
+# IDE
+.idea/
+*.iml
+.vscode/
+*.iws
+
+# SO
+.DS_Store
+
+# Logs y datos locales
+*.log
+data/
+*.db
